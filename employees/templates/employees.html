@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_filters %}
+{% block content %}
+    {% load crispy_forms_tags %}
+    <div class="container py-5">
+        <h2 class="text-info">Employees</h2>
+        <button type="button"
+                class="btn btn-primary mb-4"
+                data-toggle="modal"
+                data-target="#myModal">Add New Employee</button>
+        <button type="button"
+                class="btn btn-secondary mb-4"
+                data-toggle="modal"
+                data-target="#companyModal">
+            Add Company
+        </button>
+        <input class="form-control"
+               type="text"
+               id="myInput"
+               onkeyup="myFunction()"
+               placeholder="Search for Fullname.."
+               title="Type in a name"/>
+        <table class="table table-striped" id="myTable">
+            <thead>
+                <tr>
+                    <th >Profile Pic</th>
+                    <th onclick="sortTable(1)" style="cursor: pointer;">Full Name</th>
+                    <th onclick="sortTable(2)" style="cursor: pointer;">Company Name</th>
+                    <th onclick="sortTable(3)" style="cursor: pointer;">Employee Email Address</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                    <tr>
+                        <td>
+                            <img src="{{ employee.profile_pic.url }}" alt="" width="100" height="100" />
+                        </td>
+                        <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+                        <td>{{ employee.company.name }}</td>
+                        <td>{{ employee.email_address }}</td>
+                        <td >
+                            <i class="fa fa-edit btn btn-secondary mb-4"
+                               data-toggle="modal"
+                               data-target="#editEmployeeModal"
+                               style="cursor: pointer;"
+                               onclick="return handleEdit('{{ employee.first_name }}', '{{ employee.last_name }}','{{ employee.email_address }}','{{ employee.company.id }}','{{ employee.profile_pic.url }}')"></i>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if employees.has_other_pages %}
+            <nav aria-label="...">
+                <ul class="pagination">
+                    {% if employees.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ employees.previous_page_number }}">Previous</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                    {% endif %}
+                    {% for i in employees.paginator.page_range %}
+                        {% if employees.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }} <span class="sr-only">(current)</span></span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if employees.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ employees.next_page_number }}">Next</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        <div class="modal" id="myModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                        <h4 class="modal-title">Add Employee</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="first">First Name:</label>
+                                <input type="text" class="form-control" id="first" />
+                            </div>
+                            <div class="form-group">
+                                <label for="last">Last Name:</label>
+                                <input type="text" class="form-control" id="last" />
+                            </div>
+                            <div class="form-group">
+                                <label for="company">Company:</label>
+                                <select class="form-control" id="company">
+                                    {% for company in companies %}
+                                        <option value="{{ company.id }}">
+                                            {{ company.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="pic">Profile Pic:</label>
+                                <input type="file" class="form-control" id="pic"  accept="image/*" required />
+                            </div>
+                            <img src=""
+                                 class="img-rounded"
+                                 alt="profile_pic"
+                                 width="100"
+                                 height="100"
+                                 id="img-prev"/>
+                            <div class="form-group">
+                                <label for="email">Email Address:</label>
+                                <input type="email" class="form-control" id="email" />
+                            </div>
+                            <button class="btn btn-info" type="button" onclick="return addEmployee()">Submit</button>
+                        </form>
+                    </div>
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal" id="companyModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                        <h4 class="modal-title">
+                            Add Company
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal">
+                            &times;
+                        </button>
+                    </div>
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="company_name">
+                                    Name
+                                </label>
+                                <input type="text" class="form-control" id="company_name">
+                            </div>
+                            <button class="btn btn-info" type="button" onclick="return addCompany()">
+                                Submit
+                            </button>
+                        </form>
+                    </div>
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal" id="editEmployeeModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                        <h4 class="modal-title">
+                            Edit Employee
+                        </h4>
+                        <button type="button" class="close" data-dismiss="modal">
+                            &times;
+                        </button>
+                    </div>
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="edit-first">
+                                    First Name:
+                                </label>
+                                <input type="text" class="form-control" id="edit-first">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-last">
+                                    Last Name:
+                                </label>
+                                <input type="text" class="form-control" id="edit-last">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-company">
+                                    Company:
+                                </label>
+                                <select class="form-control" id="edit-company">
+                                    {% for company in companies %}
+                                        <option value="{{ company.id }}">
+                                            {{ company.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-pic">
+                                    Profile Pic:
+                                </label>
+                                <input type="file"
+                                       class="form-control"
+                                       id="edit-pic"
+                                       accept="image/*"
+                                       required>
+                            </div>
+                            <img src=""
+                                 class="img-rounded"
+                                 alt="profile_pic"
+                                 width="100"
+                                 height="100"
+                                 id="edit-img-prev"/>
+                            <div class="form-group" style="display: none;">
+                                <label for="edit-email">
+                                    Email Address:
+                                </label>
+                                <input type="email" class="form-control" id="edit-email" />
+                            </div>
+                            <br/>
+                            <br/>
+                            <button class="btn btn-info" type="button" onclick="return editEmployee()">
+                                Submit
+                            </button>
+                        </form>
+                    </div>
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <p class="text-center">Don't have an account? <a href="/register" class="text-info">Register</a>.</p> -->
+    <script>
+    let fileinput = document.getElementById("pic")
+    let img = document.getElementById("img-prev")
+    let editfileinput = document.getElementById("edit-pic")
+    let imag = document.getElementById("edit-img-prev")
+
+    editfileinput.onchange = (e) => {
+    let file = e.target.files[0]
+
+        imag.src = URL.createObjectURL(file)
+ 
+    }
+
+
+    fileinput.onchange = (e) => {
+    let file = e.target.files[0]
+
+        img.src = URL.createObjectURL(file)
+ 
+    }
+
+    const addEmployee = () => {
+        let formData = new FormData()
+        let herefile =document.getElementById("pic").files[0]
+        formData.append("first_name", document.getElementById("first").value)
+        formData.append("last_name", document.getElementById("last").value)
+        formData.append("company_id", document.getElementById("company").value)
+        formData.append("email_address", document.getElementById("email").value)
+        formData.append("profile_pic", herefile)
+    
+        
+        fetch("/add-employee", {
+          method: "POST",
+          body: formData
+        }).then((res)=>res.json()).then((response)=> {
+            window.location.reload()
+
+        })
+    }
+
+    const editEmployee = () => {
+        let formData = new FormData()
+        let herefile =document.getElementById("edit-pic").files[0]
+        formData.append("first_name", document.getElementById("edit-first").value)
+        formData.append("last_name", document.getElementById("edit-last").value)
+        formData.append("company_id", document.getElementById("edit-company").value)
+        formData.append("email_address", document.getElementById("edit-email").value)
+        formData.append("profile_pic", herefile)
+    
+        
+        fetch("/edit-employee", {
+          method: "POST",
+          body: formData
+        }).then((res)=>res.json()).then((response)=> {
+            window.location.reload()
+
+        })
+    }
+
+    const addCompany = () =>{
+            let company_name = document.getElementById("company_name")
+        fetch("/add-company", {
+          method: "POST",
+          body: JSON.stringify({
+            name: company_name.value,
+          })
+        }).then((res)=>res.json()).then((response)=> {
+            window.location.reload()
+        })
+    }
+
+    const handleEdit = (firstName, lastName, email, companyId, img) =>{
+        let imag = document.getElementById("edit-img-prev")
+        imag.src = img
+        document.getElementById("edit-first").value = firstName
+      document.getElementById("edit-last").value = lastName
+   document.getElementById("edit-company").value = companyId
+    document.getElementById("edit-email").value = email
+
+    }
+    function myFunction() {
+  let input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("myTable");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[1];
+    
+    if (td) {
+    
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+
+function sortTable(n) {
+  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+  table = document.getElementById("myTable");
+  switching = true;
+  // Set the sorting direction to ascending:
+  dir = "asc";
+  /* Make a loop that will continue until
+  no switching has been done: */
+  while (switching) {
+    // Start by saying: no switching is done:
+    switching = false;
+    rows = table.rows;
+    /* Loop through all table rows (except the
+    first, which contains table headers): */
+    for (i = 1; i < (rows.length - 1); i++) {
+      // Start by saying there should be no switching:
+      shouldSwitch = false;
+      /* Get the two elements you want to compare,
+      one from current row and one from the next: */
+      x = rows[i].getElementsByTagName("TD")[n];
+      y = rows[i + 1].getElementsByTagName("TD")[n];
+      /* Check if the two rows should switch place,
+      based on the direction, asc or desc: */
+      if (dir == "asc") {
+        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+          // If so, mark as a switch and break the loop:
+          shouldSwitch = true;
+          break;
+        }
+      } else if (dir == "desc") {
+        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+          // If so, mark as a switch and break the loop:
+          shouldSwitch = true;
+          break;
+        }
+      }
+    }
+    if (shouldSwitch) {
+      /* If a switch has been marked, make the switch
+      and mark that a switch has been done: */
+      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      switching = true;
+      // Each time a switch is done, increase this count by 1:
+      switchcount ++;
+    } else {
+      /* If no switching has been done AND the direction is "asc",
+      set the direction to "desc" and run the while loop again. */
+      if (switchcount == 0 && dir == "asc") {
+        dir = "desc";
+        switching = true;
+      }
+    }
+  }
+}
+    
+    </script>
+{% endblock %}

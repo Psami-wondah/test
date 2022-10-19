@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_filters %}
+
+
+{% block content %}
+    {% load crispy_forms_tags %}
+
+    <div class="container py-5">
+    <h1 class="text-info">Login</h1>
+    <form method="post" novalidate>
+    {% csrf_token %}
+        {{login_form|crispy}}
+    <button class="btn btn-info" type="submit">Login</button>
+    </form>
+    </div>
+    <!-- <p class="text-center">Don't have an account? <a href="/register" class="text-info">Register</a>.</p> -->
+
+{% endblock %}
